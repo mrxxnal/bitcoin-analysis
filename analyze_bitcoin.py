@@ -30,13 +30,6 @@ plt.xlabel("Month")
 plt.ylabel("Average Close Price (USD)")
 plt.show()
 
-git add analyze_bitcoin.py
-git commit -m "Add Bitcoin data analysis script"
-git push -u origin main
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -54,6 +47,12 @@ data['Date'] = pd.to_datetime(data['Date'])
 # Sort by date
 data.sort_values(by="Date", inplace=True)
 
+data['MA_7'] = data['Close'].rolling(window=7).mean()
+data['MA_30'] = data['Close'].rolling(window=30).mean()
+data['Volatility'] = data['Close'].rolling(window=7).std()
+X = data[['Open', 'High', 'Low', 'Volume', 'MA_7', 'MA_30', 'Volatility']].dropna()
+y = data['Close'][len(data) - len(X):]
+
 # Visualize the data
 plt.figure(figsize=(10, 5))
 plt.plot(data['Date'], data['Close'], label="Closing Price")
@@ -65,3 +64,31 @@ plt.show()
 
 # Extract relevant features
 data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.model_selection import GridSearchCV
+
+# Define the model
+gbr = GradientBoostingRegressor(random_state=42)
+
+# Train the model
+gbr.fit(X_train, y_train)
+
+# Predict on test data
+y_pred_gbr = gbr.predict(X_test)
+
+# Evaluate the model
+mse_gbr = mean_squared_error(y_test, y_pred_gbr)
+mae_gbr = mean_absolute_error(y_test, y_pred_gbr)
+
+print(f"Gradient Boosting Regressor - MSE: {mse_gbr}, MAE: {mae_gbr}")
+
+# Plot predictions vs actual
+plt.figure(figsize=(10, 5))
+plt.plot(y_test.values, label="Actual Prices", marker='o')
+plt.plot(y_pred_gbr, label="Predicted Prices", marker='x', color='red')
+plt.title("Gradient Boosting Regressor: Actual vs Predicted")
+plt.xlabel("Test Samples")
+plt.ylabel("Price (USD)")
+plt.legend()
+plt.show()
